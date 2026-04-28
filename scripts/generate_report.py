@@ -98,20 +98,27 @@ def build_summary(events, start_dt, end_dt):
     event_counts = Counter(e['event'] for e in events)
 
     # User counts and breakdown
+    # Note: events can have "user": null (e.g. automatic backups), not just missing.
     user_counts = Counter()
     user_event_breakdown = defaultdict(Counter)
     for e in events:
-        if 'user' in e:
-            name = e['user'].get('displayName', 'Unknown')
+        u = e.get('user')
+        if u and isinstance(u, dict):
+            name = u.get('displayName', 'Unknown')
             user_counts[name] += 1
             user_event_breakdown[name][e['event']] += 1
 
     # Publishes
     publishes = [e for e in events if e['event'] == 'site_published']
-    publish_users = Counter(e['user']['displayName'] for e in publishes if 'user' in e)
+    publish_users = Counter()
+    for e in publishes:
+        u = e.get('user')
+        if u and isinstance(u, dict):
+            publish_users[u.get('displayName', 'Unknown')] += 1
     domain_counts = Counter()
     for e in publishes:
-        domain = e.get('payload', {}).get('domain', 'unknown')
+        payload = e.get('payload') or {}
+        domain = payload.get('domain', 'unknown')
         domain_counts[domain] += 1
 
     # CMS articles
@@ -132,8 +139,10 @@ def build_summary(events, start_dt, end_dt):
     for e in events:
         day = e['createdOn'][:10]
         daily[day] += 1
-        if 'user' in e:
-            daily_users[day].add(e['user']['displayName'])
+        u = e.get('user')
+        if u and isinstance(u, dict):
+            name = u.get('displayName', 'Unknown')
+            daily_users[day].add(name)
 
     # Build full date list for the period
     date_list = []
@@ -167,11 +176,13 @@ def build_significant(events):
         ev = e['event']
         op = e.get('resourceOperation', '')
         name = e.get('resourceName', '')
-        user = e.get('user', {}).get('displayName', 'System')
+        u = e.get('user') or {}
+        user = u.get('displayName', 'System') if isinstance(u, dict) else 'System'
 
         if ev == 'site_published':
-            domain = e.get('payload', {}).get('domain', '')
-            if 'staging' in domain or 'webflow.io' in domain:
+            payload = e.get('payload') or {}
+            domain = payload.get('domain', '')
+            if not domain or 'staging' in domain or 'webflow.io' in domain:
                 continue
             significant.append({
                 'date': e['createdOn'][:10], 'time': e['createdOn'][11:16],

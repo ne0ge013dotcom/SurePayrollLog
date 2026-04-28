@@ -590,7 +590,10 @@ function renderArticles() {
   const arts = REPORT_DATA.summary.cms_articles || {};
   const byArt = {};
   for (const [key, count] of Object.entries(arts)) {
-    const [name, op] = key.split('|');
+    // Split from the right because article names can contain '|' themselves.
+    const lastPipe = key.lastIndexOf('|');
+    const name = lastPipe >= 0 ? key.slice(0, lastPipe) : key;
+    const op = lastPipe >= 0 ? key.slice(lastPipe + 1) : '';
     if (!byArt[name]) byArt[name] = { name, modified: 0, published: 0, created: 0, total: 0 };
     if (op === 'MODIFIED') byArt[name].modified += count;
     if (op === 'PUBLISHED') byArt[name].published += count;

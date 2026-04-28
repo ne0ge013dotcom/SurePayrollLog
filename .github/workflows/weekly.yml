@@ -1,0 +1,57 @@
+name: Weekly Webflow Activity Report
+
+on:
+  # Every Monday at 13:00 UTC (8am Chicago / 9am EDT)
+  schedule:
+    - cron: '0 13 * * 1'
+
+  # Also allow manual triggering from the Actions tab
+  workflow_dispatch:
+    inputs:
+      backfill_from:
+        description: 'Optional: backfill from this date (YYYY-MM-DD). Leave blank for normal weekly run.'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run weekly report generator
+        if: ${{ github.event.inputs.backfill_from == '' || github.event.inputs.backfill_from == null }}
+        env:
+          WEBFLOW_API_TOKEN: ${{ secrets.WEBFLOW_API_TOKEN }}
+          WEBFLOW_SITE_ID: ${{ secrets.WEBFLOW_SITE_ID }}
+        run: |
+          python scripts/weekly_run.py
+
+      - name: Run backfill (manual trigger only)
+        if: ${{ github.event.inputs.backfill_from != '' && github.event.inputs.backfill_from != null }}
+        env:
+          WEBFLOW_API_TOKEN: ${{ secrets.WEBFLOW_API_TOKEN }}
+          WEBFLOW_SITE_ID: ${{ secrets.WEBFLOW_SITE_ID }}
+        run: |
+          python scripts/backfill.py --from "${{ github.event.inputs.backfill_from }}" --skip-existing
+
+      - name: Commit and push new reports
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/ index.html
+          if git diff --staged --quiet; then
+            echo "No new reports to commit."
+          else
+            git commit -m "Add weekly activity report ($(date -u +%Y-%m-%d))"
+            git push
+          fi

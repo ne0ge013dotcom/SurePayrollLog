@@ -484,7 +484,25 @@ def main():
     template_path = script_dir / 'report_template.html'
 
     print(f"Rendering report → {output_path}")
-    meta = render_report(start_dt, end_dt, events, output_path, template_path)
+    try:
+        meta = render_report(start_dt, end_dt, events, output_path, template_path)
+    except Exception as e:
+        print(f"\nERROR rendering report for {args.start} → {args.end}", file=sys.stderr)
+        print(f"  Type: {type(e).__name__}", file=sys.stderr)
+        print(f"  Message: {e}", file=sys.stderr)
+        print(f"  Events loaded: {len(events)}", file=sys.stderr)
+        if events:
+            print(f"  First event date: {events[0].get('createdOn', '?')}", file=sys.stderr)
+            print(f"  Last event date: {events[-1].get('createdOn', '?')}", file=sys.stderr)
+        # Filter to period to show how many would have rendered
+        try:
+            in_window = filter_to_range(events, start_dt, end_dt)
+            print(f"  Events in this window: {len(in_window)}", file=sys.stderr)
+        except Exception:
+            pass
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        return 1
 
     # Write the search-entries sidecar next to the report
     sidecar_path = output_path.with_suffix('').with_name(output_path.stem + '.search.json')

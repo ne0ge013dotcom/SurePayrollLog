@@ -14,11 +14,12 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: write  # needed to commit the new report back to the repo
 
 jobs:
   generate-report:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -48,10 +49,27 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add reports/ index.html
+          # Add each path only if it exists, so a partial run still commits what it has
+          for path in reports/ pages/ index.html search_index.json; do
+            if [ -e "$path" ]; then
+              git add "$path"
+              echo "Staged: $path"
+            else
+              echo "Skipped (does not exist): $path"
+            fi
+          done
+          echo "--- Status:"
+          git status --short
           if git diff --staged --quiet; then
             echo "No new reports to commit."
           else
             git commit -m "Add weekly activity report ($(date -u +%Y-%m-%d))"
             git push
           fi
+
+      # Optional: deploy via GitHub Pages (uncomment if you set up Pages)
+      # - name: Deploy to GitHub Pages
+      #   uses: peaceiris/actions-gh-pages@v3
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     publish_dir: ./

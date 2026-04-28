@@ -130,9 +130,13 @@ def main():
     print(f"\n{'='*60}")
     print(f"Backfill complete: {succeeded} succeeded, {skipped} skipped, {len(failed)} failed")
     if failed:
-        print("\nFailures:")
+        print("\n" + "="*60)
+        print("FULL FAILURE DETAILS")
+        print("="*60)
         for ws, we, err in failed:
-            print(f"  {ws} → {we}: {err[:200]}")
+            print(f"\n--- {ws} → {we} ---")
+            print(err.strip() if err.strip() else "(no error output captured)")
+            print()
 
     # Regenerate index
     print("\nRegenerating index.html...")

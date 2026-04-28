@@ -152,6 +152,20 @@ def main():
         print(f"Index generation failed: {result.stderr}")
         return 1
 
+    # Regenerate per-page history pages
+    print("\nRegenerating page-history pages...")
+    pages_script = script_dir / 'generate_pages.py'
+    result = subprocess.run([
+        sys.executable, str(pages_script),
+        '--reports-dir', args.reports_dir,
+        '--output-dir', 'pages',
+    ], capture_output=True, text=True)
+    if result.returncode == 0:
+        print(result.stdout.strip())
+    else:
+        print(f"Page-history generation failed: {result.stderr}")
+        return 1
+
     return 0 if not failed else 1
 
 

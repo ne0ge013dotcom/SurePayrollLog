@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SurePayroll · Webflow Activity · All Reports</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e10; --panel: #16161a; --panel-2: #1c1c22;
+    --line: #2a2a32; --line-2: #3a3a44;
+    --ink: #f5f0e8; --ink-2: #b8b4ac; --ink-3: #76737a;
+    --accent: #ffd866; --accent-2: #f97e72; --accent-3: #7ee0b8;
+    --accent-4: #8fb8ff; --accent-5: #c89cff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg); color: var(--ink);
+    font-family: 'Inter Tight', -apple-system, sans-serif;
+    line-height: 1.5; -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255,216,102,0.08), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 100% 50%, rgba(126,224,184,0.04), transparent 70%),
+      var(--bg);
+    background-attachment: fixed; min-height: 100vh;
+  }
+  .grain {
+    position: fixed; inset: 0; pointer-events: none; opacity: 0.03; z-index: 100;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+  }
+  .container { max-width: 1280px; margin: 0 auto; padding: 48px 32px; }
+
+  .masthead { border-bottom: 1px solid var(--line); padding-bottom: 40px; margin-bottom: 56px; position: relative; }
+  .masthead::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--accent), transparent); }
+  .meta-row { display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--ink-3); margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+  .meta-row .left { color: var(--accent); }
+  h1 { font-family: 'Fraunces', serif; font-weight: 400; font-size: clamp(48px, 7vw, 108px); line-height: 0.92; letter-spacing: -0.03em; margin-bottom: 24px; font-variation-settings: 'opsz' 144; }
+  h1 em { font-style: italic; font-weight: 300; color: var(--accent); }
+  .deck { font-family: 'Fraunces', serif; font-size: 22px; line-height: 1.4; color: var(--ink-2); max-width: 720px; }
+  .deck strong { color: var(--ink); font-weight: 500; }
+
+  /* ========== SEARCH ========== */
+  .search-wrap {
+    margin-bottom: 56px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 24px;
+    position: relative;
+  }
+  .search-wrap::before {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-3), transparent);
+  }
+  .search-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.2em; color: var(--ink-3);
+    margin-bottom: 12px;
+  }
+  .search-input-wrap {
+    position: relative;
+  }
+  .search-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 14px 18px 14px 48px;
+    color: var(--ink);
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 400;
+    line-height: 1.2;
+    transition: border-color 0.15s;
+    font-variation-settings: 'opsz' 24;
+  }
+  .search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .search-input::placeholder {
+    color: var(--ink-3);
+    font-style: italic;
+  }
+  .search-icon {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    width: 22px; height: 22px; color: var(--ink-3);
+    pointer-events: none;
+  }
+  .search-input:focus ~ .search-icon { color: var(--accent); }
+  .search-clear {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: var(--panel-2); border: none;
+    color: var(--ink-3); cursor: pointer;
+    width: 28px; height: 28px; border-radius: 99px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    display: none; align-items: center; justify-content: center;
+  }
+  .search-clear.visible { display: flex; }
+  .search-clear:hover { color: var(--ink); background: var(--line-2); }
+
+  .filter-pills {
+    display: flex; gap: 6px; margin-top: 14px; flex-wrap: wrap;
+  }
+  .filter-pill {
+    background: var(--panel-2); border: 1px solid var(--line);
+    color: var(--ink-2); cursor: pointer;
+    padding: 5px 12px; border-radius: 99px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    transition: all 0.15s;
+  }
+  .filter-pill:hover { border-color: var(--ink-3); color: var(--ink); }
+  .filter-pill.active {
+    background: var(--accent); color: var(--bg); border-color: var(--accent);
+    font-weight: 700;
+  }
+
+  .search-status {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--ink-3); letter-spacing: 0.05em;
+    margin-top: 14px;
+    min-height: 14px;
+  }
+  .search-status strong { color: var(--accent-3); font-weight: 700; }
+
+  .search-results {
+    margin-top: 18px;
+    max-height: 560px; overflow-y: auto;
+    display: none;
+    border-top: 1px dashed var(--line-2);
+    padding-top: 18px;
+  }
+  .search-results.visible { display: block; }
+
+  .result-group {
+    margin-bottom: 24px;
+  }
+  .result-group-title {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-3);
+    margin-bottom: 10px;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .result-group-count {
+    color: var(--accent); font-weight: 700;
+  }
+  .result-list {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .result-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px; align-items: baseline;
+    padding: 10px 14px;
+    background: var(--panel-2);
+    border-radius: 3px;
+    border-left: 2px solid var(--line-2);
+    text-decoration: none; color: inherit;
+    transition: all 0.12s;
+  }
+  .result-item:hover {
+    background: var(--bg); border-left-color: var(--accent);
+    transform: translateX(2px);
+  }
+  .result-item.cat-page { border-left-color: var(--accent-4); }
+  .result-item.cat-article { border-left-color: var(--accent-3); }
+  .result-item.cat-user { border-left-color: var(--accent); }
+  .result-item.cat-publish { border-left-color: var(--accent-2); }
+  .result-item.cat-milestone { border-left-color: var(--accent-5); }
+
+  .result-main { overflow: hidden; }
+  .result-title {
+    font-family: 'Fraunces', serif; font-size: 15px; font-weight: 500;
+    line-height: 1.3; color: var(--ink);
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .result-title mark {
+    background: rgba(255,216,102,0.25); color: var(--accent);
+    border-radius: 2px; padding: 0 2px;
+  }
+  .result-detail {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--ink-3); margin-top: 3px; letter-spacing: 0.05em;
+  }
+
+  .result-meta {
+    text-align: right; flex-shrink: 0;
+  }
+  .result-period {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--ink-2); letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .result-week {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    color: var(--ink-3); letter-spacing: 0.15em;
+    margin-top: 2px;
+  }
+
+  .search-empty {
+    text-align: center; padding: 40px 20px;
+    color: var(--ink-3); font-family: 'Fraunces', serif;
+    font-size: 18px; font-style: italic;
+  }
+
+  /* ========== STATS ========== */
+  .summary-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-bottom: 64px; border-radius: 4px; overflow: hidden; }
+  .stat { background: var(--panel); padding: 28px 24px; }
+  .stat-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 12px; }
+  .stat-value { font-family: 'Fraunces', serif; font-weight: 500; font-size: 48px; line-height: 1; letter-spacing: -0.02em; color: var(--accent); }
+  .stat-value.green { color: var(--accent-3); }
+  .stat-value.coral { color: var(--accent-2); }
+  .stat-value.blue { color: var(--accent-4); }
+
+  .section-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .section-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); letter-spacing: 0.2em; }
+  .section-head h2 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 36px; letter-spacing: -0.02em; line-height: 1; }
+  .section-head .kicker { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-3); letter-spacing: 0.1em; }
+
+  /* Year section grouping */
+  .year-block { margin-bottom: 56px; }
+  .year-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    letter-spacing: 0.3em; color: var(--ink-3); text-transform: uppercase;
+    margin-bottom: 20px; padding-bottom: 8px;
+    border-bottom: 1px dashed var(--line-2);
+  }
+
+  .reports-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
+  .report-card {
+    display: block;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 4px; padding: 24px;
+    text-decoration: none; color: inherit;
+    transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+    position: relative; overflow: hidden;
+  }
+  .report-card::before {
+    content: ''; position: absolute; left: 0; top: 0;
+    width: 3px; height: 100%; background: var(--line-2);
+    transition: background 0.18s;
+  }
+  .report-card:hover {
+    transform: translateY(-2px); border-color: var(--accent);
+    box-shadow: 0 12px 32px -12px rgba(255,216,102,0.18);
+  }
+  .report-card:hover::before { background: var(--accent); }
+  .report-card.latest { border-color: rgba(255,216,102,0.5); }
+  .report-card.latest::before { background: var(--accent); }
+  .report-card.latest .latest-tag {
+    position: absolute; top: 12px; right: 12px;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    background: var(--accent); color: var(--bg);
+    padding: 3px 8px; border-radius: 2px; font-weight: 700;
+  }
+
+  .report-week {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    letter-spacing: 0.2em; color: var(--accent);
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .report-period {
+    font-family: 'Fraunces', serif; font-weight: 500;
+    font-size: 22px; letter-spacing: -0.01em; line-height: 1.2;
+    margin-bottom: 20px;
+  }
+  .report-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 12px; padding-top: 16px; border-top: 1px dashed var(--line);
+  }
+  .report-stat-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-3);
+    margin-bottom: 4px;
+  }
+  .report-stat-value {
+    font-family: 'Fraunces', serif; font-weight: 500; font-size: 20px;
+    color: var(--ink);
+  }
+  .report-stat-value.events { color: var(--accent); }
+  .report-stat-value.publishes { color: var(--accent-2); }
+  .report-stat-value.users { color: var(--accent-3); }
+
+  .empty-state {
+    text-align: center; padding: 80px 20px;
+    background: var(--panel); border: 1px dashed var(--line-2); border-radius: 4px;
+  }
+  .empty-state h3 { font-family: 'Fraunces', serif; font-size: 32px; color: var(--ink-2); margin-bottom: 12px; font-weight: 500; }
+  .empty-state p { color: var(--ink-3); }
+
+  footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-3); letter-spacing: 0.15em; text-transform: uppercase; flex-wrap: wrap; gap: 16px; }
+  footer .mark { font-family: 'Fraunces', serif; font-style: italic; color: var(--ink-2); text-transform: none; letter-spacing: 0; font-size: 13px; }
+
+  ::-webkit-scrollbar { height: 8px; width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--panel); }
+  ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 99px; }
+
+  @media (max-width: 900px) {
+    .summary-stats { grid-template-columns: repeat(2, 1fr); }
+    .search-input { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<script>window.__SEARCH_DATA__ = [{"cat": "page", "title": "AI Automation [test]", "detail": "2 DOM edits", "haystack": "page AI Automation [test]", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "page", "title": "Pricing", "detail": "1 DOM edit", "haystack": "page Pricing", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "page", "title": "Payment Processing", "detail": "5 DOM edits", "haystack": "page Payment Processing", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "page", "title": "New Sign Up", "detail": "2 DOM edits", "haystack": "page New Sign Up", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "page", "title": "Home", "detail": "1 DOM edit", "haystack": "page Home", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "page", "title": "[test] Ads AI Automatizations Template", "detail": "1 DOM edit", "haystack": "page [test] Ads AI Automatizations Template", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "page", "title": "Built for this", "detail": "1 DOM edit", "haystack": "page Built for this", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "article", "title": "Is Automated Payroll Worth It for Small Teams? The Math for 1\u20139 Employees", "detail": "3 publishes, 3 edits", "haystack": "article Is Automated Payroll Worth It for Small Teams? The Math for 1\u20139 Employees", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "article", "title": "How to Get an EIN for Your Small Business and Prepare for Payroll", "detail": "3 publishes, 3 edits", "haystack": "article How to Get an EIN for Your Small Business and Prepare for Payroll", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "article", "title": "How to Calculate Employee Pay: The True Cost of Your First Hire", "detail": "1 publish, 2 edits", "haystack": "article How to Calculate Employee Pay: The True Cost of Your First Hire", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "article", "title": "How to Fill Out Form 941: A Step-by-Step Guide for Small Businesses", "detail": "1 publish, 1 edit", "haystack": "article How to Fill Out Form 941: A Step-by-Step Guide for Small Businesses", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "article", "title": "Test", "detail": "created", "haystack": "article Test", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "user", "title": "Claudette Zolkowski brown", "detail": "17 events", "haystack": "user Claudette Zolkowski brown", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "user", "title": "Eric Ruiz Molero", "detail": "43 events", "haystack": "user Eric Ruiz Molero", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "user", "title": "Lauryn Johnson", "detail": "2 events", "haystack": "user Lauryn Johnson", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "user", "title": "Dustin Solmonson", "detail": "304 events", "haystack": "user Dustin Solmonson", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "user", "title": "Marina Gallardo", "detail": "4 events", "haystack": "user Marina Gallardo", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "milestone", "title": "Article published: Is Automated Payroll Worth It for Small Teams? The Math for ...", "detail": "2026-04-23 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: Is Automated Payroll Worth It for Small Teams? The Math for ... Claudette Zolkowski brown 2026-04-23", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "milestone", "title": "Article published: Is Automated Payroll Worth It for Small Teams? The Math for ...", "detail": "2026-04-23 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: Is Automated Payroll Worth It for Small Teams? The Math for ... Claudette Zolkowski brown 2026-04-23", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "milestone", "title": "Article published: Is Automated Payroll Worth It for Small Teams? The Math for ...", "detail": "2026-04-23 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: Is Automated Payroll Worth It for Small Teams? The Math for ... Claudette Zolkowski brown 2026-04-23", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "milestone", "title": "Article published: How to Get an EIN for Your Small Business and Prepare for Pa...", "detail": "2026-04-23 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: How to Get an EIN for Your Small Business and Prepare for Pa... Claudette Zolkowski brown 2026-04-23", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "milestone", "title": "Article published: How to Calculate Employee Pay: The True Cost of Your First H...", "detail": "2026-04-23 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: How to Calculate Employee Pay: The True Cost of Your First H... Claudette Zolkowski brown 2026-04-23", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "milestone", "title": "Article published: How to Fill Out Form 941: A Step-by-Step Guide for Small Bus...", "detail": "2026-04-23 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: How to Fill Out Form 941: A Step-by-Step Guide for Small Bus... Claudette Zolkowski brown 2026-04-23", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "milestone", "title": "Article published: How to Get an EIN for Your Small Business and Prepare for Pa...", "detail": "2026-04-23 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: How to Get an EIN for Your Small Business and Prepare for Pa... Claudette Zolkowski brown 2026-04-23", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "milestone", "title": "Article published: How to Get an EIN for Your Small Business and Prepare for Pa...", "detail": "2026-04-23 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: How to Get an EIN for Your Small Business and Prepare for Pa... Claudette Zolkowski brown 2026-04-23", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "milestone", "title": "Library installed", "detail": "2026-04-23 \u00b7 Eric Ruiz Molero", "haystack": "library Library installed Eric Ruiz Molero 2026-04-23", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "milestone", "title": "Branch created: Home", "detail": "2026-04-21 \u00b7 Dustin Solmonson", "haystack": "branch Branch created: Home Dustin Solmonson 2026-04-21", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "milestone", "title": "Page created", "detail": "2026-04-20 \u00b7 Eric Ruiz Molero", "haystack": "page_create Page created Eric Ruiz Molero 2026-04-20", "report": "reports/2026-W17_2026-04-20_2026-04-26.html", "period": "Apr 20 \u2013 Apr 26, 2026", "week": "2026-W17"}, {"cat": "page", "title": "Licenses", "detail": "5 DOM edits", "haystack": "page Licenses", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "page", "title": "650 Partnership", "detail": "1 DOM edit", "haystack": "page 650 Partnership", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "page", "title": "Terminologies Template", "detail": "1 DOM edit", "haystack": "page Terminologies Template", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "page", "title": "New Sign Up", "detail": "18 DOM edits", "haystack": "page New Sign Up", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "page", "title": "AI Automation [test]", "detail": "3 DOM edits", "haystack": "page AI Automation [test]", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "page", "title": "AI Automation [test2]", "detail": "3 DOM edits", "haystack": "page AI Automation [test2]", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "article", "title": "How Small Business Owners Get Health Insurance: Plans, Deductions, and Why Structure Matters", "detail": "1 publish, 5 edits", "haystack": "article How Small Business Owners Get Health Insurance: Plans, Deductions, and Why Structure Matters", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "article", "title": "Is Automated Payroll Worth It for Small Teams? The Math for 1\u20139 Employees", "detail": "3 publishes, 10 edits", "haystack": "article Is Automated Payroll Worth It for Small Teams? The Math for 1\u20139 Employees", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "article", "title": "Which Payroll Schedule Fits Your Small Business? Here\u2019s How to Decide.", "detail": "1 publish, 6 edits", "haystack": "article Which Payroll Schedule Fits Your Small Business? Here\u2019s How to Decide.", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "article", "title": "State Unemployment Insurance (SUI)", "detail": "1 publish, 6 edits", "haystack": "article State Unemployment Insurance (SUI)", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "article", "title": "How to Process a Final Paycheck: What to Pay and When", "detail": "1 publish, 5 edits", "haystack": "article How to Process a Final Paycheck: What to Pay and When", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "article", "title": "Manual Payroll vs. Automated Payroll: How to Choose", "detail": "1 publish, 6 edits", "haystack": "article Manual Payroll vs. Automated Payroll: How to Choose", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "article", "title": "Default Payroll vs Auto Payroll: Which is Right for You? ", "detail": "1 edit", "haystack": "article Default Payroll vs Auto Payroll: Which is Right for You? ", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "article", "title": "Payroll Withholding Table", "detail": "1 publish, 6 edits", "haystack": "article Payroll Withholding Table", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "article", "title": "Payroll Tax Table ", "detail": "1 edit", "haystack": "article Payroll Tax Table ", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "user", "title": "Scott Crucean", "detail": "45 events", "haystack": "user Scott Crucean", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "user", "title": "Claudette Zolkowski brown", "detail": "9 events", "haystack": "user Claudette Zolkowski brown", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "user", "title": "Dustin Solmonson", "detail": "87 events", "haystack": "user Dustin Solmonson", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "user", "title": "Eric Ruiz Molero", "detail": "37 events", "haystack": "user Eric Ruiz Molero", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "user", "title": "Marina Gallardo", "detail": "69 events", "haystack": "user Marina Gallardo", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "publish", "title": "partners.surepayroll.com", "detail": "4 publishes", "haystack": "publish deploy domain partners.surepayroll.com", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "publish", "title": "blog.surepayroll.com", "detail": "4 publishes", "haystack": "publish deploy domain blog.surepayroll.com", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "publish", "title": "epi.surepayroll.com", "detail": "4 publishes", "haystack": "publish deploy domain epi.surepayroll.com", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "publish", "title": "pi.surepayroll.com", "detail": "4 publishes", "haystack": "publish deploy domain pi.surepayroll.com", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "publish", "title": "surepayroll.com", "detail": "4 publishes", "haystack": "publish deploy domain surepayroll.com", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "publish", "title": "www.surepayroll.com", "detail": "4 publishes", "haystack": "publish deploy domain www.surepayroll.com", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "publish", "title": "new.surepayroll.com", "detail": "4 publishes", "haystack": "publish deploy domain new.surepayroll.com", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "publish", "title": "surepayroll-staging.webflow.io", "detail": "3 publishes (staging)", "haystack": "publish deploy domain surepayroll-staging.webflow.io", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Article published: How Small Business Owners Get Health Insurance: Plans, Deduc...", "detail": "2026-04-17 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: How Small Business Owners Get Health Insurance: Plans, Deduc... Claudette Zolkowski brown 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Article published: Is Automated Payroll Worth It for Small Teams? The Math for ...", "detail": "2026-04-17 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: Is Automated Payroll Worth It for Small Teams? The Math for ... Claudette Zolkowski brown 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Article published: Is Automated Payroll Worth It for Small Teams? The Math for ...", "detail": "2026-04-17 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: Is Automated Payroll Worth It for Small Teams? The Math for ... Claudette Zolkowski brown 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Article published: Is Automated Payroll Worth It for Small Teams? The Math for ...", "detail": "2026-04-17 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: Is Automated Payroll Worth It for Small Teams? The Math for ... Claudette Zolkowski brown 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to partners.surepayroll.com", "detail": "2026-04-17 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to partners.surepayroll.com Dustin Solmonson 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to blog.surepayroll.com", "detail": "2026-04-17 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to blog.surepayroll.com Dustin Solmonson 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to epi.surepayroll.com", "detail": "2026-04-17 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to epi.surepayroll.com Dustin Solmonson 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to pi.surepayroll.com", "detail": "2026-04-17 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to pi.surepayroll.com Dustin Solmonson 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to surepayroll.com", "detail": "2026-04-17 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to surepayroll.com Dustin Solmonson 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to www.surepayroll.com", "detail": "2026-04-17 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to www.surepayroll.com Dustin Solmonson 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to new.surepayroll.com", "detail": "2026-04-17 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to new.surepayroll.com Dustin Solmonson 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to partners.surepayroll.com", "detail": "2026-04-17 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to partners.surepayroll.com Dustin Solmonson 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to blog.surepayroll.com", "detail": "2026-04-17 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to blog.surepayroll.com Dustin Solmonson 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to epi.surepayroll.com", "detail": "2026-04-17 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to epi.surepayroll.com Dustin Solmonson 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to pi.surepayroll.com", "detail": "2026-04-17 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to pi.surepayroll.com Dustin Solmonson 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to surepayroll.com", "detail": "2026-04-17 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to surepayroll.com Dustin Solmonson 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to www.surepayroll.com", "detail": "2026-04-17 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to www.surepayroll.com Dustin Solmonson 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to new.surepayroll.com", "detail": "2026-04-17 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to new.surepayroll.com Dustin Solmonson 2026-04-17", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Article published: Which Payroll Schedule Fits Your Small Business? Here\u2019s How ...", "detail": "2026-04-16 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: Which Payroll Schedule Fits Your Small Business? Here\u2019s How ... Claudette Zolkowski brown 2026-04-16", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Article published: State Unemployment Insurance (SUI)", "detail": "2026-04-16 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: State Unemployment Insurance (SUI) Claudette Zolkowski brown 2026-04-16", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Article published: How to Process a Final Paycheck: What to Pay and When", "detail": "2026-04-14 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: How to Process a Final Paycheck: What to Pay and When Claudette Zolkowski brown 2026-04-14", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Article published: Manual Payroll vs. Automated Payroll: How to Choose", "detail": "2026-04-14 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: Manual Payroll vs. Automated Payroll: How to Choose Claudette Zolkowski brown 2026-04-14", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to partners.surepayroll.com", "detail": "2026-04-13 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to partners.surepayroll.com Dustin Solmonson 2026-04-13", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to blog.surepayroll.com", "detail": "2026-04-13 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to blog.surepayroll.com Dustin Solmonson 2026-04-13", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to epi.surepayroll.com", "detail": "2026-04-13 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to epi.surepayroll.com Dustin Solmonson 2026-04-13", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to pi.surepayroll.com", "detail": "2026-04-13 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to pi.surepayroll.com Dustin Solmonson 2026-04-13", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to surepayroll.com", "detail": "2026-04-13 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to surepayroll.com Dustin Solmonson 2026-04-13", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to www.surepayroll.com", "detail": "2026-04-13 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to www.surepayroll.com Dustin Solmonson 2026-04-13", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to new.surepayroll.com", "detail": "2026-04-13 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to new.surepayroll.com Dustin Solmonson 2026-04-13", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to partners.surepayroll.com", "detail": "2026-04-13 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to partners.surepayroll.com Dustin Solmonson 2026-04-13", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to blog.surepayroll.com", "detail": "2026-04-13 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to blog.surepayroll.com Dustin Solmonson 2026-04-13", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to epi.surepayroll.com", "detail": "2026-04-13 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to epi.surepayroll.com Dustin Solmonson 2026-04-13", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to pi.surepayroll.com", "detail": "2026-04-13 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to pi.surepayroll.com Dustin Solmonson 2026-04-13", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to surepayroll.com", "detail": "2026-04-13 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to surepayroll.com Dustin Solmonson 2026-04-13", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to www.surepayroll.com", "detail": "2026-04-13 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to www.surepayroll.com Dustin Solmonson 2026-04-13", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Production publish to new.surepayroll.com", "detail": "2026-04-13 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to new.surepayroll.com Dustin Solmonson 2026-04-13", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Article published: Payroll Withholding Table", "detail": "2026-04-13 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: Payroll Withholding Table Claudette Zolkowski brown 2026-04-13", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "milestone", "title": "Page created", "detail": "2026-04-13 \u00b7 Eric Ruiz Molero", "haystack": "page_create Page created Eric Ruiz Molero 2026-04-13", "report": "reports/2026-W16_2026-04-13_2026-04-19.html", "period": "Apr 13 \u2013 Apr 19, 2026", "week": "2026-W16"}, {"cat": "page", "title": "New Sign Up", "detail": "7 DOM edits", "haystack": "page New Sign Up", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "page", "title": "New Sign Up Referral Test", "detail": "1 DOM edit", "haystack": "page New Sign Up Referral Test", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "page", "title": "Reseller Marketing Materials | SurePayroll", "detail": "4 DOM edits", "haystack": "page Reseller Marketing Materials | SurePayroll", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "page", "title": "Articles Template", "detail": "2 DOM edits", "haystack": "page Articles Template", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "article", "title": "Marnee Horesh", "detail": "1 publish, 1 edit", "haystack": "article Marnee Horesh", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "article", "title": "Kerry Patterson", "detail": "1 publish, 1 edit", "haystack": "article Kerry Patterson", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "article", "title": "What Makes Payroll Software Easy and Flexible and Why It Matters for Small Businesses", "detail": "1 publish, 2 edits", "haystack": "article What Makes Payroll Software Easy and Flexible and Why It Matters for Small Businesses", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "article", "title": "How to Get an EIN for Your Small Business and Prepare for Payroll", "detail": "3 publishes, 12 edits", "haystack": "article How to Get an EIN for Your Small Business and Prepare for Payroll", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "article", "title": "Federal Tax Withholding from Employee Paychecks: A Small Business Owner\u2019s Guide ", "detail": "1 publish, 9 edits", "haystack": "article Federal Tax Withholding from Employee Paychecks: A Small Business Owner\u2019s Guide ", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "article", "title": "What Is Federal Income Tax Withholding? A Guide for First-Time \u200b\u200b\u200b\u200bEmployers", "detail": "4 publishes, 16 edits", "haystack": "article What Is Federal Income Tax Withholding? A Guide for First-Time \u200b\u200b\u200b\u200bEmployers", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "article", "title": "How to Fill Out Form 941: A Step-by-Step Guide for Small Businesses", "detail": "2 edits", "haystack": "article How to Fill Out Form 941: A Step-by-Step Guide for Small Businesses", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "article", "title": "How do I get an EIN Number?", "detail": "2 edits", "haystack": "article How do I get an EIN Number?", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "article", "title": "Choosing the Right Retirement Plan for Your Small Business", "detail": "4 edits", "haystack": "article Choosing the Right Retirement Plan for Your Small Business", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "article", "title": "How to Create a PTO Policy for Your Small Business", "detail": "1 publish, 3 edits", "haystack": "article How to Create a PTO Policy for Your Small Business", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "article", "title": "How to Calculate Employee Pay: The True Cost of Your First Hire", "detail": "1 publish, 6 edits", "haystack": "article How to Calculate Employee Pay: The True Cost of Your First Hire", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "article", "title": "What Type of Insurance Does a Small Business need? Guidance for Owners with 1\u20135 Employees", "detail": "1 publish, 2 edits", "haystack": "article What Type of Insurance Does a Small Business need? Guidance for Owners with 1\u20135 Employees", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "article", "title": "How Much Federal Tax is Taken Out of My Paycheck? ", "detail": "2 edits", "haystack": "article How Much Federal Tax is Taken Out of My Paycheck? ", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "user", "title": "Marina Gallardo", "detail": "68 events", "haystack": "user Marina Gallardo", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "user", "title": "Claudette Zolkowski brown", "detail": "20 events", "haystack": "user Claudette Zolkowski brown", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "user", "title": "Scott Crucean", "detail": "55 events", "haystack": "user Scott Crucean", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "user", "title": "Lauryn Johnson", "detail": "9 events", "haystack": "user Lauryn Johnson", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "user", "title": "Dustin Solmonson", "detail": "37 events", "haystack": "user Dustin Solmonson", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "publish", "title": "partners.surepayroll.com", "detail": "3 publishes", "haystack": "publish deploy domain partners.surepayroll.com", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "publish", "title": "blog.surepayroll.com", "detail": "3 publishes", "haystack": "publish deploy domain blog.surepayroll.com", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "publish", "title": "epi.surepayroll.com", "detail": "3 publishes", "haystack": "publish deploy domain epi.surepayroll.com", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "publish", "title": "pi.surepayroll.com", "detail": "3 publishes", "haystack": "publish deploy domain pi.surepayroll.com", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "publish", "title": "surepayroll.com", "detail": "3 publishes", "haystack": "publish deploy domain surepayroll.com", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "publish", "title": "www.surepayroll.com", "detail": "3 publishes", "haystack": "publish deploy domain www.surepayroll.com", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "publish", "title": "new.surepayroll.com", "detail": "3 publishes", "haystack": "publish deploy domain new.surepayroll.com", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "publish", "title": "surepayroll-staging.webflow.io", "detail": "3 publishes (staging)", "haystack": "publish deploy domain surepayroll-staging.webflow.io", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Article published: Marnee Horesh", "detail": "2026-04-08 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: Marnee Horesh Claudette Zolkowski brown 2026-04-08", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Article published: Kerry Patterson", "detail": "2026-04-08 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: Kerry Patterson Claudette Zolkowski brown 2026-04-08", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Article published: What Makes Payroll Software Easy and Flexible and Why It Mat...", "detail": "2026-04-08 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: What Makes Payroll Software Easy and Flexible and Why It Mat... Claudette Zolkowski brown 2026-04-08", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Article published: How to Get an EIN for Your Small Business and Prepare for Pa...", "detail": "2026-04-08 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: How to Get an EIN for Your Small Business and Prepare for Pa... Claudette Zolkowski brown 2026-04-08", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Page created", "detail": "2026-04-08 \u00b7 Marina Gallardo", "haystack": "page_create Page created Marina Gallardo 2026-04-08", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Article published: Federal Tax Withholding from Employee Paychecks: A Small Bus...", "detail": "2026-04-08 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: Federal Tax Withholding from Employee Paychecks: A Small Bus... Claudette Zolkowski brown 2026-04-08", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Article published: How to Get an EIN for Your Small Business and Prepare for Pa...", "detail": "2026-04-07 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: How to Get an EIN for Your Small Business and Prepare for Pa... Claudette Zolkowski brown 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Article published: How to Get an EIN for Your Small Business and Prepare for Pa...", "detail": "2026-04-07 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: How to Get an EIN for Your Small Business and Prepare for Pa... Claudette Zolkowski brown 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to partners.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to partners.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to blog.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to blog.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to epi.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to epi.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to pi.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to pi.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to www.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to www.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to new.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to new.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to partners.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to partners.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to blog.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to blog.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to epi.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to epi.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to pi.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to pi.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to www.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to www.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to new.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to new.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Article published: What Is Federal Income Tax Withholding? A Guide for First-Ti...", "detail": "2026-04-07 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: What Is Federal Income Tax Withholding? A Guide for First-Ti... Claudette Zolkowski brown 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Article published: What Is Federal Income Tax Withholding? A Guide for First-Ti...", "detail": "2026-04-07 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: What Is Federal Income Tax Withholding? A Guide for First-Ti... Claudette Zolkowski brown 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Article published: How to Create a PTO Policy for Your Small Business", "detail": "2026-04-07 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: How to Create a PTO Policy for Your Small Business Claudette Zolkowski brown 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Article published: How to Calculate Employee Pay: The True Cost of Your First H...", "detail": "2026-04-07 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: How to Calculate Employee Pay: The True Cost of Your First H... Claudette Zolkowski brown 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Article published: What Type of Insurance Does a Small Business need? Guidance ...", "detail": "2026-04-07 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: What Type of Insurance Does a Small Business need? Guidance ... Claudette Zolkowski brown 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to partners.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to partners.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to blog.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to blog.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to epi.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to epi.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to pi.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to pi.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to www.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to www.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Production publish to new.surepayroll.com", "detail": "2026-04-07 \u00b7 Dustin Solmonson", "haystack": "site_publish Production publish to new.surepayroll.com Dustin Solmonson 2026-04-07", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Article published: What Is Federal Income Tax Withholding? A Guide for First-Ti...", "detail": "2026-04-06 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: What Is Federal Income Tax Withholding? A Guide for First-Ti... Claudette Zolkowski brown 2026-04-06", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "milestone", "title": "Article published: What Is Federal Income Tax Withholding? A Guide for First-Ti...", "detail": "2026-04-06 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: What Is Federal Income Tax Withholding? A Guide for First-Ti... Claudette Zolkowski brown 2026-04-06", "report": "reports/2026-W15_2026-04-06_2026-04-12.html", "period": "Apr 6 \u2013 Apr 12, 2026", "week": "2026-W15"}, {"cat": "page", "title": "New Sign Up Continue", "detail": "10 DOM edits", "haystack": "page New Sign Up Continue", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "page", "title": "New Sign Up", "detail": "42 DOM edits", "haystack": "page New Sign Up", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "page", "title": "Referral Terms & Conditions", "detail": "2 DOM edits", "haystack": "page Referral Terms & Conditions", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "page", "title": "Disclaimer", "detail": "1 DOM edit", "haystack": "page Disclaimer", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "page", "title": "Built for this", "detail": "1 DOM edit", "haystack": "page Built for this", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "page", "title": "Webinars Template", "detail": "1 DOM edit", "haystack": "page Webinars Template", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "page", "title": "Referral Program General (Potential deletion)", "detail": "2 DOM edits", "haystack": "page Referral Program General (Potential deletion)", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "page", "title": "Refer Household", "detail": "2 DOM edits", "haystack": "page Refer Household", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "page", "title": "Referral Program (Referred Prospect)", "detail": "1 DOM edit", "haystack": "page Referral Program (Referred Prospect)", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "page", "title": "Refer a Business", "detail": "1 DOM edit", "haystack": "page Refer a Business", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "article", "title": "What Makes Payroll Software Easy and Flexible and Why It Matters for Small Businesses", "detail": "2 publishes, 7 edits", "haystack": "article What Makes Payroll Software Easy and Flexible and Why It Matters for Small Businesses", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "article", "title": "Flexible Payroll Options for Small Business Owners", "detail": "1 edit", "haystack": "article Flexible Payroll Options for Small Business Owners", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "article", "title": "Marnee Horesh", "detail": "created", "haystack": "article Marnee Horesh", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "article", "title": "Kerry Patterson", "detail": "1 publish, created", "haystack": "article Kerry Patterson", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "article", "title": "Unlock Extra Cash with Referral Rewards", "detail": "2 edits", "haystack": "article Unlock Extra Cash with Referral Rewards", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "user", "title": "Claudette Zolkowski brown", "detail": "7 events", "haystack": "user Claudette Zolkowski brown", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "user", "title": "Marina Gallardo", "detail": "399 events", "haystack": "user Marina Gallardo", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "user", "title": "Scott Crucean", "detail": "6 events", "haystack": "user Scott Crucean", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "user", "title": "Kevin Rieck", "detail": "37 events", "haystack": "user Kevin Rieck", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "user", "title": "Eric Ruiz Molero", "detail": "2 events", "haystack": "user Eric Ruiz Molero", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "publish", "title": "partners.surepayroll.com", "detail": "2 publishes", "haystack": "publish deploy domain partners.surepayroll.com", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "publish", "title": "blog.surepayroll.com", "detail": "2 publishes", "haystack": "publish deploy domain blog.surepayroll.com", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "publish", "title": "epi.surepayroll.com", "detail": "2 publishes", "haystack": "publish deploy domain epi.surepayroll.com", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "publish", "title": "pi.surepayroll.com", "detail": "2 publishes", "haystack": "publish deploy domain pi.surepayroll.com", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "publish", "title": "surepayroll.com", "detail": "2 publishes", "haystack": "publish deploy domain surepayroll.com", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "publish", "title": "www.surepayroll.com", "detail": "2 publishes", "haystack": "publish deploy domain www.surepayroll.com", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "publish", "title": "new.surepayroll.com", "detail": "2 publishes", "haystack": "publish deploy domain new.surepayroll.com", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "publish", "title": "surepayroll-staging.webflow.io", "detail": "4 publishes (staging)", "haystack": "publish deploy domain surepayroll-staging.webflow.io", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Article published: What Makes Payroll Software Easy and Flexible and Why It Mat...", "detail": "2026-04-03 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: What Makes Payroll Software Easy and Flexible and Why It Mat... Claudette Zolkowski brown 2026-04-03", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Article published: What Makes Payroll Software Easy and Flexible and Why It Mat...", "detail": "2026-04-03 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: What Makes Payroll Software Easy and Flexible and Why It Mat... Claudette Zolkowski brown 2026-04-03", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Article published: Kerry Patterson", "detail": "2026-04-01 \u00b7 Claudette Zolkowski brown", "haystack": "article_published Article published: Kerry Patterson Claudette Zolkowski brown 2026-04-01", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Production publish to partners.surepayroll.com", "detail": "2026-04-01 \u00b7 Kevin Rieck", "haystack": "site_publish Production publish to partners.surepayroll.com Kevin Rieck 2026-04-01", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Production publish to blog.surepayroll.com", "detail": "2026-04-01 \u00b7 Kevin Rieck", "haystack": "site_publish Production publish to blog.surepayroll.com Kevin Rieck 2026-04-01", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Production publish to epi.surepayroll.com", "detail": "2026-04-01 \u00b7 Kevin Rieck", "haystack": "site_publish Production publish to epi.surepayroll.com Kevin Rieck 2026-04-01", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Production publish to pi.surepayroll.com", "detail": "2026-04-01 \u00b7 Kevin Rieck", "haystack": "site_publish Production publish to pi.surepayroll.com Kevin Rieck 2026-04-01", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Production publish to surepayroll.com", "detail": "2026-04-01 \u00b7 Kevin Rieck", "haystack": "site_publish Production publish to surepayroll.com Kevin Rieck 2026-04-01", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Production publish to www.surepayroll.com", "detail": "2026-04-01 \u00b7 Kevin Rieck", "haystack": "site_publish Production publish to www.surepayroll.com Kevin Rieck 2026-04-01", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Production publish to new.surepayroll.com", "detail": "2026-04-01 \u00b7 Kevin Rieck", "haystack": "site_publish Production publish to new.surepayroll.com Kevin Rieck 2026-04-01", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Production publish to partners.surepayroll.com", "detail": "2026-04-01 \u00b7 Kevin Rieck", "haystack": "site_publish Production publish to partners.surepayroll.com Kevin Rieck 2026-04-01", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Production publish to blog.surepayroll.com", "detail": "2026-04-01 \u00b7 Kevin Rieck", "haystack": "site_publish Production publish to blog.surepayroll.com Kevin Rieck 2026-04-01", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Production publish to epi.surepayroll.com", "detail": "2026-04-01 \u00b7 Kevin Rieck", "haystack": "site_publish Production publish to epi.surepayroll.com Kevin Rieck 2026-04-01", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Production publish to pi.surepayroll.com", "detail": "2026-04-01 \u00b7 Kevin Rieck", "haystack": "site_publish Production publish to pi.surepayroll.com Kevin Rieck 2026-04-01", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Production publish to surepayroll.com", "detail": "2026-04-01 \u00b7 Kevin Rieck", "haystack": "site_publish Production publish to surepayroll.com Kevin Rieck 2026-04-01", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Production publish to www.surepayroll.com", "detail": "2026-04-01 \u00b7 Kevin Rieck", "haystack": "site_publish Production publish to www.surepayroll.com Kevin Rieck 2026-04-01", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Production publish to new.surepayroll.com", "detail": "2026-04-01 \u00b7 Kevin Rieck", "haystack": "site_publish Production publish to new.surepayroll.com Kevin Rieck 2026-04-01", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Branch merged: Referral Terms & Conditions", "detail": "2026-03-30 \u00b7 Kevin Rieck", "haystack": "branch Branch merged: Referral Terms & Conditions Kevin Rieck 2026-03-30", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Branch merged: Refer a Business", "detail": "2026-03-30 \u00b7 Kevin Rieck", "haystack": "branch Branch merged: Refer a Business Kevin Rieck 2026-03-30", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Branch created: Refer a Business", "detail": "2026-03-30 \u00b7 Kevin Rieck", "haystack": "branch Branch created: Refer a Business Kevin Rieck 2026-03-30", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}, {"cat": "milestone", "title": "Branch created: Referral Terms & Conditions", "detail": "2026-03-30 \u00b7 Kevin Rieck", "haystack": "branch Branch created: Referral Terms & Conditions Kevin Rieck 2026-03-30", "report": "reports/2026-W14_2026-03-30_2026-04-05.html", "period": "Mar 30 \u2013 Apr 5, 2026", "week": "2026-W14"}];</script>
+<div class="grain"></div>
+<div class="container">
+
+  <header class="masthead">
+    <div class="meta-row">
+      <div class="left">◆ ARCHIVE</div>
+      <div>SurePayroll · WEBFLOW WORKSPACE</div>
+      <div>4 REPORTS</div>
+    </div>
+    <h1>The <em>Weekly</em><br>Archive.</h1>
+    <p class="deck">Every weekly activity report for the SurePayroll Webflow site, generated automatically each Monday morning. Search across all reports below, or browse by week.</p>
+  </header>
+
+  <!-- ===== SEARCH ===== -->
+  <div class="search-wrap">
+    <div class="search-label">SEARCH ACROSS ALL 4 REPORTS</div>
+    <div class="search-input-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="7"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" class="search-input" id="searchInput" placeholder="Try: New Sign Up, Marina, EIN, payment, partners.surepayroll..." autocomplete="off" spellcheck="false">
+      <button class="search-clear" id="searchClear" aria-label="Clear search">✕</button>
+    </div>
+    <div class="filter-pills" id="filterPills">
+      <button class="filter-pill active" data-cat="all">All</button>
+      <button class="filter-pill" data-cat="page">Pages</button>
+      <button class="filter-pill" data-cat="article">Articles</button>
+      <button class="filter-pill" data-cat="user">People</button>
+      <button class="filter-pill" data-cat="publish">Publishes</button>
+      <button class="filter-pill" data-cat="milestone">Milestones</button>
+    </div>
+    <div class="search-status" id="searchStatus">Type to search across 209 entries from every report.</div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+
+  <div class="summary-stats">
+    <div class="stat">
+      <div class="stat-label">Reports Generated</div>
+      <div class="stat-value">4</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Total Events Tracked</div>
+      <div class="stat-value blue">1,350</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Total Publishes</div>
+      <div class="stat-value coral">73</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Latest Report</div>
+      <div class="stat-value green" style="font-size:24px;line-height:1.2">Apr 20 – 26, 2026</div>
+    </div>
+  </div>
+
+  <section>
+    <div class="section-head">
+      <div class="section-num">§ 01</div>
+      <h2>All Reports</h2>
+      <div class="kicker">NEWEST FIRST</div>
+    </div>
+    
+            <div class="year-block">
+              <div class="year-label">— 2026 · 4 reports —</div>
+              <div class="reports-grid">
+                
+                <a href="reports/2026-W17_2026-04-20_2026-04-26.html" class="report-card latest">
+                  <div class="latest-tag">LATEST</div>
+                  <div class="report-week">WEEK 17 · 2026</div>
+                  <div class="report-period">Apr 20 – 26, 2026</div>
+                  <div class="report-stats">
+                    <div class="report-stat">
+                      <div class="report-stat-label">Events</div>
+                      <div class="report-stat-value events">387</div>
+                    </div>
+                    <div class="report-stat">
+                      <div class="report-stat-label">Publishes</div>
+                      <div class="report-stat-value publishes">0</div>
+                    </div>
+                    <div class="report-stat">
+                      <div class="report-stat-label">People</div>
+                      <div class="report-stat-value users">5</div>
+                    </div>
+                  </div>
+                </a>
+                
+                <a href="reports/2026-W16_2026-04-13_2026-04-19.html" class="report-card ">
+                  
+                  <div class="report-week">WEEK 16 · 2026</div>
+                  <div class="report-period">Apr 13 – 19, 2026</div>
+                  <div class="report-stats">
+                    <div class="report-stat">
+                      <div class="report-stat-label">Events</div>
+                      <div class="report-stat-value events">276</div>
+                    </div>
+                    <div class="report-stat">
+                      <div class="report-stat-label">Publishes</div>
+                      <div class="report-stat-value publishes">31</div>
+                    </div>
+                    <div class="report-stat">
+                      <div class="report-stat-label">People</div>
+                      <div class="report-stat-value users">5</div>
+                    </div>
+                  </div>
+                </a>
+                
+                <a href="reports/2026-W15_2026-04-06_2026-04-12.html" class="report-card ">
+                  
+                  <div class="report-week">WEEK 15 · 2026</div>
+                  <div class="report-period">Apr 6 – 12, 2026</div>
+                  <div class="report-stats">
+                    <div class="report-stat">
+                      <div class="report-stat-label">Events</div>
+                      <div class="report-stat-value events">212</div>
+                    </div>
+                    <div class="report-stat">
+                      <div class="report-stat-label">Publishes</div>
+                      <div class="report-stat-value publishes">24</div>
+                    </div>
+                    <div class="report-stat">
+                      <div class="report-stat-label">People</div>
+                      <div class="report-stat-value users">5</div>
+                    </div>
+                  </div>
+                </a>
+                
+                <a href="reports/2026-W14_2026-03-30_2026-04-05.html" class="report-card ">
+                  
+                  <div class="report-week">WEEK 14 · 2026</div>
+                  <div class="report-period">Mar 30 – Apr 5, 2026</div>
+                  <div class="report-stats">
+                    <div class="report-stat">
+                      <div class="report-stat-label">Events</div>
+                      <div class="report-stat-value events">475</div>
+                    </div>
+                    <div class="report-stat">
+                      <div class="report-stat-label">Publishes</div>
+                      <div class="report-stat-value publishes">18</div>
+                    </div>
+                    <div class="report-stat">
+                      <div class="report-stat-label">People</div>
+                      <div class="report-stat-value users">5</div>
+                    </div>
+                  </div>
+                </a>
+                
+              </div>
+            </div>
+            
+  </section>
+
+  <footer>
+    <div>WEBFLOW DATA API · ENTERPRISE ACTIVITY LOG</div>
+    <div class="mark">— index regenerated each run —</div>
+    <div>UPDATED · APR 28, 2026 · 17:57 UTC</div>
+  </footer>
+</div>
+
+<script>
+(function() {
+  const input = document.getElementById('searchInput');
+  const clearBtn = document.getElementById('searchClear');
+  const status = document.getElementById('searchStatus');
+  const results = document.getElementById('searchResults');
+  const pillContainer = document.getElementById('filterPills');
+
+  let SEARCH_DATA = window.__SEARCH_DATA__ || [];
+  let activeCategory = 'all';
+  let lastQuery = '';
+
+  // Category labels and ordering for grouped output
+  const CAT_LABELS = {
+    page: 'Pages',
+    article: 'Articles',
+    user: 'People',
+    publish: 'Publishes',
+    milestone: 'Milestones',
+    'event-type': 'Event types',
+  };
+  const CAT_ORDER = ['page', 'article', 'user', 'publish', 'milestone', 'event-type'];
+
+  // Initial status
+  if (SEARCH_DATA.length > 0) {
+    status.textContent = `Type to search across ${SEARCH_DATA.length.toLocaleString()} entries from every report.`;
+  } else {
+    status.textContent = 'No search index available. Generate a report to populate it.';
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  }
+
+  function highlight(text, query) {
+    if (!query) return escapeHtml(text);
+    const escaped = escapeHtml(text);
+    // Match each word in query individually so multi-word search works
+    const words = query.trim().split(/\s+/).filter(w => w.length > 0);
+    if (words.length === 0) return escaped;
+    // Build a regex that matches any of the words
+    const re = new RegExp('(' + words.map(w =>
+      w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'gi');
+    return escaped.replace(re, '<mark>$1</mark>');
+  }
+
+  function searchEntries(query, category) {
+    if (!query || query.trim().length < 2) {
+      // No query: show only category filter (or nothing if 'all')
+      if (category === 'all') return [];
+      return SEARCH_DATA.filter(e => e.cat === category);
+    }
+    const q = query.toLowerCase().trim();
+    const words = q.split(/\s+/).filter(w => w.length > 0);
+    const filtered = SEARCH_DATA.filter(e => {
+      if (category !== 'all' && e.cat !== category) return false;
+      const hay = ((e.haystack || '') + ' ' + (e.title || '') + ' ' + (e.detail || '')).toLowerCase();
+      return words.every(w => hay.indexOf(w) !== -1);
+    });
+
+    // Score by how many words match in title (more relevant = higher score)
+    return filtered.map(e => {
+      const title = (e.title || '').toLowerCase();
+      let score = 0;
+      for (const w of words) if (title.indexOf(w) !== -1) score += 2;
+      // Bonus if title starts with the first word
+      if (title.startsWith(words[0])) score += 3;
+      return { entry: e, score };
+    }).sort((a, b) => b.score - a.score).map(x => x.entry);
+  }
+
+  function render(query, category) {
+    const matches = searchEntries(query, category);
+
+    // Update status line
+    if (!query || query.trim().length < 2) {
+      if (category === 'all') {
+        status.innerHTML = `Type at least 2 characters to search across <strong>${SEARCH_DATA.length.toLocaleString()}</strong> entries.`;
+        results.classList.remove('visible');
+        results.innerHTML = '';
+        return;
+      }
+      status.innerHTML = `Showing all <strong>${matches.length.toLocaleString()}</strong> ${CAT_LABELS[category] || category} entries.`;
+    } else {
+      const catLabel = category === 'all' ? '' : ` in ${CAT_LABELS[category] || category}`;
+      status.innerHTML = `<strong>${matches.length.toLocaleString()}</strong> result${matches.length === 1 ? '' : 's'} for "${escapeHtml(query)}"${catLabel}`;
+    }
+
+    if (matches.length === 0) {
+      results.classList.add('visible');
+      results.innerHTML = '<div class="search-empty">Nothing matched. Try a different word or clear filters.</div>';
+      return;
+    }
+
+    // Group matches by category
+    const grouped = {};
+    for (const m of matches) {
+      if (!grouped[m.cat]) grouped[m.cat] = [];
+      grouped[m.cat].push(m);
+    }
+
+    let html = '';
+    for (const cat of CAT_ORDER) {
+      if (!grouped[cat]) continue;
+      const items = grouped[cat];
+      // Cap at 50 per category so the list stays manageable
+      const displayed = items.slice(0, 50);
+      const more = items.length - displayed.length;
+      html += `<div class="result-group">
+        <div class="result-group-title">
+          <span>${CAT_LABELS[cat] || cat}</span>
+          <span class="result-group-count">${items.length}${more > 0 ? ` (showing 50)` : ''}</span>
+        </div>
+        <div class="result-list">`;
+      for (const e of displayed) {
+        html += `<a href="${escapeHtml(e.report)}" class="result-item cat-${e.cat}">
+          <div class="result-main">
+            <div class="result-title">${highlight(e.title, query)}</div>
+            <div class="result-detail">${highlight(e.detail || '', query)}</div>
+          </div>
+          <div class="result-meta">
+            <div class="result-period">${escapeHtml(e.period || '')}</div>
+            <div class="result-week">${escapeHtml(e.week || '')}</div>
+          </div>
+        </a>`;
+      }
+      html += '</div></div>';
+    }
+
+    results.innerHTML = html;
+    results.classList.add('visible');
+  }
+
+  function update() {
+    const q = input.value;
+    lastQuery = q;
+    clearBtn.classList.toggle('visible', q.length > 0);
+    render(q, activeCategory);
+  }
+
+  // Wire up search input (debounced)
+  let debounceTimer = null;
+  input.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(update, 80);
+  });
+
+  // Clear button
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    update();
+    input.focus();
+  });
+
+  // ESC to clear
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      input.value = '';
+      update();
+    }
+  });
+
+  // Filter pills
+  pillContainer.addEventListener('click', (e) => {
+    const btn = e.target.closest('.filter-pill');
+    if (!btn) return;
+    pillContainer.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    activeCategory = btn.dataset.cat;
+    update();
+  });
+
+  // Keyboard shortcut: / to focus search (when not already typing)
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      input.focus();
+    }
+  });
+})();
+</script>
+</body>
+</html>

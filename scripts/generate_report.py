@@ -17,6 +17,10 @@ from datetime import datetime, timezone, timedelta
 from collections import Counter, defaultdict
 from pathlib import Path
 
+# Local import: slug logic shared with generate_pages.py
+sys.path.insert(0, str(Path(__file__).parent))
+from generate_pages import slugify, EXCLUDED_NAMES
+
 
 # ============================================================================
 # CONFIGURATION
@@ -258,6 +262,63 @@ def build_insights(summary, num_events):
 
 
 # ============================================================================
+# PAGE-LEVEL EVENT HISTORY
+# ============================================================================
+
+# Webflow event types that act on a page or CMS item, mapped to a friendly
+# action label and the entity type they belong to.
+PAGE_EVENT_MAP = {
+    'page_dom_modified':                 ('DOM edited',         'page'),
+    'page_settings_modified':            ('Settings edited',    'page'),
+    'page_settings_custom_code_modified':('Custom code edited', 'page'),
+    'page_published':                    ('Published',          'page'),
+    'page_created':                      ('Created',            'page'),
+    'page_renamed':                      ('Renamed',            'page'),
+    'page_duplicated':                   ('Duplicated',         'page'),
+    'page_deleted':                      ('Deleted',            'page'),
+    'ix2_modified_on_page':              ('Interactions edited','page'),
+    'cms_item':                          ('CMS event',          'article'),
+}
+
+
+def build_page_events(events, report_url, period_str, week_iso):
+    """
+    For every event that targets a page or CMS item, emit a record with
+    enough context to reconstruct that entity's history across weeks.
+    """
+    page_events = []
+    for e in events:
+        ev = e['event']
+        if ev not in PAGE_EVENT_MAP:
+            continue
+        action, entity_type = PAGE_EVENT_MAP[ev]
+        name = e.get('resourceName')
+        if not name:
+            continue
+
+        # CMS events have a meaningful operation (CREATED / MODIFIED / PUBLISHED)
+        op = e.get('resourceOperation')
+        if ev == 'cms_item' and op:
+            action = op.title()  # "Modified", "Published", "Created"
+
+        u = e.get('user') or {}
+        user = u.get('displayName', 'System') if isinstance(u, dict) else 'System'
+
+        page_events.append({
+            'entity': name,
+            'entity_type': entity_type,
+            'event': ev,
+            'action': action,
+            'timestamp': e['createdOn'],
+            'user': user,
+            'report': report_url,
+            'period': period_str,
+            'week': week_iso,
+        })
+    return page_events
+
+
+# ============================================================================
 # SEARCH INDEX
 # ============================================================================
 def build_search_entries(events, summary, significant, report_url, period_str):
@@ -270,6 +331,8 @@ def build_search_entries(events, summary, significant, report_url, period_str):
 
     # Pages (DOM-modified)
     for page_name, count in summary.get('page_counts', {}).items():
+        if not page_name or page_name.lower() in EXCLUDED_NAMES:
+            continue
         entries.append({
             'cat': 'page',
             'title': page_name,
@@ -277,6 +340,7 @@ def build_search_entries(events, summary, significant, report_url, period_str):
             'haystack': f'page {page_name}',
             'report': report_url,
             'period': period_str,
+            'slug': slugify(page_name),
         })
 
     # Articles (CMS items, deduped by name)
@@ -293,6 +357,8 @@ def build_search_entries(events, summary, significant, report_url, period_str):
             article_totals[name]['created'] += count
 
     for name, ops in article_totals.items():
+        if not name or name.lower() in EXCLUDED_NAMES:
+            continue
         bits = []
         if ops['published']:
             bits.append(f'{ops["published"]} publish{"es" if ops["published"] != 1 else ""}')
@@ -307,6 +373,7 @@ def build_search_entries(events, summary, significant, report_url, period_str):
             'haystack': f'article {name}',
             'report': report_url,
             'period': period_str,
+            'slug': slugify(name),
         })
 
     # Users
@@ -402,6 +469,19 @@ def render_report(start_dt, end_dt, events, output_path, template_path):
         'date_list': summary['date_list'],
     }
 
+    # Build name → slug map for every entity referenced in this report.
+    # The report's HTML uses this to link entity names to their history page.
+    # Pages: from page_counts (DOM-modified pages)
+    # Articles: from cms_articles keys
+    entity_slugs = {}
+    for page_name in summary.get('page_counts', {}):
+        if page_name and page_name.lower() not in EXCLUDED_NAMES:
+            entity_slugs[page_name] = slugify(page_name)
+    for cms_key in summary.get('cms_articles', {}):
+        article_name = cms_key.split('|')[0]
+        if article_name and article_name.lower() not in EXCLUDED_NAMES:
+            entity_slugs[article_name] = slugify(article_name)
+
     # Template substitutions
     template = Path(template_path).read_text()
     replacements = {
@@ -427,6 +507,7 @@ def render_report(start_dt, end_dt, events, output_path, template_path):
         '{{REPORT_PERIOD}}': period_str,
         '{{GENERATED_DATE}}': datetime.now(timezone.utc).strftime('%b %-d, %Y').upper(),
         '{{DATA_JSON}}': json.dumps(payload),
+        '{{ENTITY_SLUGS_JSON}}': json.dumps(entity_slugs),
     }
 
     for placeholder, value in replacements.items():
@@ -440,6 +521,8 @@ def render_report(start_dt, end_dt, events, output_path, template_path):
     search_entries = build_search_entries(
         filtered, summary, significant, report_url, period_str
     )
+    week_iso = start_dt.strftime('%Y-W%V')
+    page_events = build_page_events(filtered, report_url, period_str, week_iso)
 
     return {
         'path': str(output_path),
@@ -451,6 +534,7 @@ def render_report(start_dt, end_dt, events, output_path, template_path):
         'contributors': len(summary['user_counts']),
         'cms_edits': summary['total_cms'],
         'search_entries': search_entries,
+        'page_events': page_events,
     }
 
 
@@ -519,12 +603,17 @@ def main():
     sidecar_path = output_path.with_suffix('').with_name(output_path.stem + '.search.json')
     sidecar_path.write_text(json.dumps(meta['search_entries']))
 
+    # Write the page-events sidecar (per-entity history)
+    pages_sidecar = output_path.with_suffix('').with_name(output_path.stem + '.pages.json')
+    pages_sidecar.write_text(json.dumps(meta['page_events']))
+
     print(f"\n✓ Report generated: {meta['path']}")
     print(f"  Period:        {meta['period']}")
     print(f"  Total events:  {meta['total_events']}")
     print(f"  Contributors:  {meta['contributors']}")
     print(f"  Site publishes: {meta['total_publishes']}")
     print(f"  Search index:  {len(meta['search_entries'])} entries")
+    print(f"  Page events:   {len(meta['page_events'])} entries")
 
     if args.meta_out:
         Path(args.meta_out).parent.mkdir(parents=True, exist_ok=True)

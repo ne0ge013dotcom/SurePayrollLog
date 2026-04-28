@@ -41,7 +41,12 @@ def fetch_activity_logs(site_id, start_dt, max_pages=MAX_PAGES):
     Fetch activity logs going back until we pass start_dt.
     Returns list of events (newest first). Stops paginating when oldest event
     on a page is before start_dt.
+
+    Webflow's API rate limit is 60 requests/minute. We sleep ~1.1s between
+    requests to stay safely under that, and back off automatically on 429.
     """
+    import time
+
     if not WEBFLOW_TOKEN:
         raise RuntimeError(
             "WEBFLOW_API_TOKEN environment variable not set.\n"
@@ -52,6 +57,10 @@ def fetch_activity_logs(site_id, start_dt, max_pages=MAX_PAGES):
     all_events = []
     offset = 0
 
+    # Stay safely under Webflow's 60 req/min limit (~1 req/sec).
+    REQUEST_INTERVAL_SECONDS = 1.1
+    last_request_time = 0.0
+
     for page in range(max_pages):
         url = f"{API_BASE}/sites/{site_id}/activity_logs?limit={PAGE_LIMIT}&offset={offset}"
         req = urllib.request.Request(url, headers={
@@ -59,14 +68,36 @@ def fetch_activity_logs(site_id, start_dt, max_pages=MAX_PAGES):
             'Accept': 'application/json',
         })
 
-        try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                data = json.loads(resp.read())
-        except urllib.error.HTTPError as e:
-            body = e.read().decode('utf-8', errors='replace')
-            raise RuntimeError(f"Webflow API error {e.code}: {body}") from e
-        except urllib.error.URLError as e:
-            raise RuntimeError(f"Network error fetching {url}: {e}") from e
+        # Throttle: wait until enough time has passed since the last request
+        elapsed = time.time() - last_request_time
+        if elapsed < REQUEST_INTERVAL_SECONDS:
+            time.sleep(REQUEST_INTERVAL_SECONDS - elapsed)
+
+        # Retry loop for 429 rate-limit errors with exponential backoff
+        max_retries = 6
+        attempt = 0
+        while True:
+            last_request_time = time.time()
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    data = json.loads(resp.read())
+                break  # success, exit retry loop
+            except urllib.error.HTTPError as e:
+                if e.code == 429 and attempt < max_retries:
+                    # Honor Retry-After header if present, otherwise back off
+                    retry_after = e.headers.get('Retry-After')
+                    if retry_after and retry_after.isdigit():
+                        wait_s = int(retry_after) + 1
+                    else:
+                        wait_s = min(60, 5 * (2 ** attempt))  # 5, 10, 20, 40, 60, 60
+                    print(f"  rate limited on page {page + 1}, waiting {wait_s}s before retry {attempt + 1}/{max_retries}")
+                    time.sleep(wait_s)
+                    attempt += 1
+                    continue
+                body = e.read().decode('utf-8', errors='replace') if hasattr(e, 'read') else str(e)
+                raise RuntimeError(f"Webflow API error {e.code}: {body}") from e
+            except urllib.error.URLError as e:
+                raise RuntimeError(f"Network error fetching {url}: {e}") from e
 
         items = data.get('items', [])
         if not items:

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Severance Pay Tax Calculator · Activity History · SurePayroll</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+  :root {
+    --bg: #0e0e10; --panel: #16161a; --panel-2: #1c1c22;
+    --line: #2a2a32; --line-2: #3a3a44;
+    --ink: #f5f0e8; --ink-2: #b8b4ac; --ink-3: #76737a;
+    --accent: #ffd866; --accent-2: #f97e72; --accent-3: #7ee0b8;
+    --accent-4: #8fb8ff; --accent-5: #c89cff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg); color: var(--ink);
+    font-family: 'Inter Tight', -apple-system, sans-serif;
+    line-height: 1.5; -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255,216,102,0.08), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 100% 50%, rgba(126,224,184,0.04), transparent 70%),
+      var(--bg);
+    background-attachment: fixed; min-height: 100vh;
+  }
+  .grain {
+    position: fixed; inset: 0; pointer-events: none; opacity: 0.03; z-index: 100;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+  }
+  .container { max-width: 1280px; margin: 0 auto; padding: 48px 32px; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    color: var(--ink-3); text-decoration: none;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    margin-bottom: 32px; transition: color 0.15s;
+  }
+  .back-link:hover { color: var(--accent); }
+
+  .masthead { border-bottom: 1px solid var(--line); padding-bottom: 40px; margin-bottom: 56px; position: relative; }
+  .masthead::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--accent), transparent); }
+  .meta-row { display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--ink-3); margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+  .meta-row .left { color: var(--accent); }
+  h1 { font-family: 'Fraunces', serif; font-weight: 400; line-height: 0.95; letter-spacing: -0.02em; margin-bottom: 24px; font-variation-settings: 'opsz' 144; }
+  h1.big { font-size: clamp(48px, 7vw, 96px); line-height: 0.92; }
+  h1.med { font-size: clamp(32px, 4vw, 56px); }
+  h1 em { font-style: italic; font-weight: 300; color: var(--accent); }
+  .deck { font-family: 'Fraunces', serif; font-size: 20px; line-height: 1.4; color: var(--ink-2); max-width: 760px; }
+  .deck strong { color: var(--ink); font-weight: 500; }
+
+  .section-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .section-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); letter-spacing: 0.2em; }
+  .section-head h2 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 32px; letter-spacing: -0.02em; line-height: 1; }
+  .section-head .kicker { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-3); letter-spacing: 0.1em; }
+
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 28px; }
+  .panel-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--ink-3); margin-bottom: 20px; }
+
+  footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-3); letter-spacing: 0.15em; text-transform: uppercase; flex-wrap: wrap; gap: 16px; }
+  footer .mark { font-family: 'Fraunces', serif; font-style: italic; color: var(--ink-2); text-transform: none; letter-spacing: 0; font-size: 13px; }
+
+  ::-webkit-scrollbar { height: 8px; width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--panel); }
+  ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 99px; }
+
+
+  .entity-tag {
+    display: inline-block; padding: 4px 12px; border-radius: 99px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    border: 1px solid; margin-bottom: 16px;
+  }
+  .entity-tag.page { background: rgba(143,184,255,0.1); color: var(--accent-4); border-color: rgba(143,184,255,0.3); }
+  .entity-tag.article { background: rgba(126,224,184,0.1); color: var(--accent-3); border-color: rgba(126,224,184,0.3); }
+
+  .summary-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-bottom: 56px; border-radius: 4px; overflow: hidden; }
+  .stat { background: var(--panel); padding: 24px 20px; }
+  .stat-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px; }
+  .stat-value { font-family: 'Fraunces', serif; font-weight: 500; font-size: 40px; line-height: 1; letter-spacing: -0.02em; color: var(--accent); font-variation-settings: 'opsz' 56; }
+  .stat-value.green { color: var(--accent-3); }
+  .stat-value.coral { color: var(--accent-2); }
+  .stat-value.blue { color: var(--accent-4); }
+  .stat-value.small { font-size: 22px; line-height: 1.2; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 56px; }
+
+  /* action breakdown bars */
+  .action-row { display: grid; grid-template-columns: 160px 1fr 50px; gap: 12px; align-items: center; margin-bottom: 10px; }
+  .action-name { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-2); letter-spacing: 0.02em; }
+  .action-bar { height: 8px; background: var(--panel-2); border-radius: 1px; overflow: hidden; }
+  .action-bar > div { height: 100%; background: var(--accent); }
+  .action-row.modified .action-bar > div { background: var(--accent); }
+  .action-row.published .action-bar > div { background: var(--accent-3); }
+  .action-row.dom .action-bar > div { background: var(--accent-2); }
+  .action-row.settings .action-bar > div { background: var(--accent-5); }
+  .action-row.code .action-bar > div { background: var(--accent-4); }
+  .action-count { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink); text-align: right; }
+
+  /* editor breakdown */
+  .editor-row { display: grid; grid-template-columns: 1fr 1fr 50px; gap: 12px; align-items: center; margin-bottom: 10px; }
+  .editor-name { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 500; }
+  .editor-bar { height: 8px; background: var(--panel-2); border-radius: 1px; overflow: hidden; }
+  .editor-bar > div { height: 100%; background: var(--accent-3); }
+  .editor-count { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent-3); text-align: right; font-weight: 700; }
+
+  /* week heatmap */
+  .week-strip { display: flex; gap: 3px; flex-wrap: nowrap; overflow-x: auto; padding: 4px 0; }
+  .week-cell { flex: 1 0 32px; aspect-ratio: 1; border-radius: 3px; position: relative; min-width: 32px; max-width: 60px; transition: transform 0.15s; cursor: pointer; }
+  .week-cell:hover { transform: scale(1.15); outline: 1px solid var(--accent); z-index: 5; }
+  .week-cell .tip {
+    position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: var(--bg);
+    padding: 6px 10px; border-radius: 4px;
+    font-size: 11px; font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap; opacity: 0; pointer-events: none;
+    transition: opacity 0.15s; z-index: 20;
+  }
+  .week-cell:hover .tip { opacity: 1; }
+  .week-strip-labels { display: flex; gap: 3px; flex-wrap: nowrap; margin-top: 6px; padding: 0; }
+  .week-strip-labels > div { flex: 1 0 32px; min-width: 32px; max-width: 60px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--ink-3); }
+
+  /* timeline */
+  .timeline { position: relative; padding-left: 36px; }
+  .timeline::before { content: ''; position: absolute; left: 8px; top: 8px; bottom: 0; width: 1px; background: linear-gradient(to bottom, var(--accent) 0%, var(--line-2) 100%); }
+  .timeline-day { margin-bottom: 28px; position: relative; }
+  .timeline-day::before { content: ''; position: absolute; left: -36px; top: 6px; width: 17px; height: 17px; background: var(--bg); border: 2px solid var(--accent); border-radius: 50%; }
+  .timeline-date { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  .timeline-events { display: flex; flex-direction: column; gap: 8px; }
+  .timeline-event {
+    display: grid; grid-template-columns: 60px 1fr 140px 120px;
+    gap: 14px; align-items: baseline;
+    padding: 10px 14px;
+    background: var(--panel);
+    border-radius: 3px; border-left: 2px solid var(--line-2);
+    font-size: 13px;
+  }
+  .timeline-event:hover { background: var(--panel-2); border-left-color: var(--accent); }
+  .timeline-event.published { border-left-color: var(--accent-3); }
+  .timeline-event.modified { border-left-color: var(--accent); }
+  .timeline-event.dom { border-left-color: var(--accent-2); }
+  .timeline-event.settings { border-left-color: var(--accent-5); }
+  .timeline-event.code { border-left-color: var(--accent-4); }
+
+  .te-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-3); }
+  .te-action { color: var(--ink); font-weight: 500; }
+  .te-user { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.05em; }
+  .te-link { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--accent); text-align: right; text-decoration: none; letter-spacing: 0.1em; text-transform: uppercase; }
+  .te-link:hover { color: var(--accent-3); }
+
+  .timeline-scroll { max-height: 720px; overflow-y: auto; padding-right: 12px; }
+
+  @media (max-width: 900px) {
+    .summary-row { grid-template-columns: repeat(2, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+    .timeline-event { grid-template-columns: 1fr; gap: 4px; padding: 14px; }
+    .te-link { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="container">
+
+  <a href="index.html" class="back-link">← BACK TO ALL PAGES & ARTICLES</a>
+
+  <header class="masthead">
+    <span class="entity-tag article">ARTICLE</span>
+    <h1 class="med">Severance Pay Tax Calculator</h1>
+    <p class="deck">Every recorded change to this article, drawn from 2 weekly reports. <strong>4 events</strong> by <strong>1 editor</strong>, between Apr 11, 2025 and Apr 23, 2025.</p>
+  </header>
+
+  <div class="summary-row">
+    <div class="stat">
+      <div class="stat-label">Total Events</div>
+      <div class="stat-value">4</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Editors</div>
+      <div class="stat-value green">1</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Weeks active</div>
+      <div class="stat-value blue">2</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Most recent</div>
+      <div class="stat-value coral small">APR 23, 2025</div>
+    </div>
+  </div>
+
+  <section style="margin-bottom:56px">
+    <div class="section-head">
+      <div class="section-num">§ 01</div>
+      <h2>Activity by Week</h2>
+      <div class="kicker">52 WEEKS / 2 ACTIVE</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">EVENTS PER WEEK · HOVER FOR DETAIL</div>
+      <div class="week-strip"><div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W01 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W02 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W03 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W04 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W05 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W06 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W07 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W08 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W09 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W10 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W11 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W12 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W13 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W14 · 0 events</div></div>
+<div class="week-cell" style="background:rgba(255,216,102,0.95)"><a href="../reports/2025-W15_2025-04-07_2025-04-13.html" style="display:block;width:100%;height:100%;border-radius:3px"></a><div class="tip">2025-W15 · 3 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W16 · 0 events</div></div>
+<div class="week-cell" style="background:rgba(255,216,102,0.55)"><a href="../reports/2025-W17_2025-04-21_2025-04-27.html" style="display:block;width:100%;height:100%;border-radius:3px"></a><div class="tip">2025-W17 · 1 event</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W18 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W19 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W20 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W21 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W22 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W23 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W24 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W25 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W26 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W27 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W28 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W29 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W30 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W31 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W32 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W33 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W34 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W35 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W36 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W37 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W38 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W39 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W40 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W41 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W42 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W43 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W44 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W45 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W46 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W47 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W48 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W49 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W50 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W51 · 0 events</div></div>
+<div class="week-cell" style="background:var(--panel-2)"><div class="tip">2025-W52 · 0 events</div></div></div>
+      <div class="week-strip-labels"><div>W01</div>
+<div></div>
+<div>W03</div>
+<div></div>
+<div>W05</div>
+<div></div>
+<div>W07</div>
+<div></div>
+<div>W09</div>
+<div></div>
+<div>W11</div>
+<div></div>
+<div>W13</div>
+<div></div>
+<div>W15</div>
+<div></div>
+<div>W17</div>
+<div></div>
+<div>W19</div>
+<div></div>
+<div>W21</div>
+<div></div>
+<div>W23</div>
+<div></div>
+<div>W25</div>
+<div></div>
+<div>W27</div>
+<div></div>
+<div>W29</div>
+<div></div>
+<div>W31</div>
+<div></div>
+<div>W33</div>
+<div></div>
+<div>W35</div>
+<div></div>
+<div>W37</div>
+<div></div>
+<div>W39</div>
+<div></div>
+<div>W41</div>
+<div></div>
+<div>W43</div>
+<div></div>
+<div>W45</div>
+<div></div>
+<div>W47</div>
+<div></div>
+<div>W49</div>
+<div></div>
+<div>W51</div>
+<div></div></div>
+    </div>
+  </section>
+
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">ACTIONS BREAKDOWN</div>
+      <div class="action-row modified"><div class="action-name">Modified</div><div class="action-bar"><div style="width:100.0%"></div></div><div class="action-count">3</div></div>
+<div class="action-row published"><div class="action-name">Published</div><div class="action-bar"><div style="width:33.3%"></div></div><div class="action-count">1</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">WHO MADE THE EDITS</div>
+      <div class="editor-row"><div class="editor-name">Dustin Solmonson</div><div class="editor-bar"><div style="width:100.0%"></div></div><div class="editor-count">4</div></div>
+    </div>
+  </div>
+
+  <section>
+    <div class="section-head">
+      <div class="section-num">§ 02</div>
+      <h2>Full History</h2>
+      <div class="kicker">4 EVENTS · NEWEST FIRST</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">EVERY MODIFICATION, IN ORDER</div>
+      <div class="timeline-scroll">
+        <div class="timeline"><div class="timeline-day"><div class="timeline-date">WED, APR 23, 2025 · 1 EVENT</div><div class="timeline-events"><div class="timeline-event published"><div class="te-time">18:49</div><div class="te-action">Published</div><div class="te-user">Dustin Solmonson</div><a href="../reports/2025-W17_2025-04-21_2025-04-27.html" class="te-link">2025-W17 REPORT</a></div></div></div>
+<div class="timeline-day"><div class="timeline-date">FRI, APR 11, 2025 · 3 EVENTS</div><div class="timeline-events"><div class="timeline-event modified"><div class="te-time">18:42</div><div class="te-action">Modified</div><div class="te-user">Dustin Solmonson</div><a href="../reports/2025-W15_2025-04-07_2025-04-13.html" class="te-link">2025-W15 REPORT</a></div><div class="timeline-event modified"><div class="te-time">18:41</div><div class="te-action">Modified</div><div class="te-user">Dustin Solmonson</div><a href="../reports/2025-W15_2025-04-07_2025-04-13.html" class="te-link">2025-W15 REPORT</a></div><div class="timeline-event modified"><div class="te-time">18:39</div><div class="te-action">Modified</div><div class="te-user">Dustin Solmonson</div><a href="../reports/2025-W15_2025-04-07_2025-04-13.html" class="te-link">2025-W15 REPORT</a></div></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>WEBFLOW DATA API · ENTERPRISE ACTIVITY LOG</div>
+    <div class="mark">— history of Severance Pay Tax Calculator —</div>
+    <div>UPDATED · APR 28, 2026 · 21:02 UTC</div>
+  </footer>
+</div>
+</body>
+</html>

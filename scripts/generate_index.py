@@ -184,7 +184,6 @@ INDEX_TEMPLATE = """<!DOCTYPE html>
     background: var(--panel-2);
     border-radius: 3px;
     border-left: 2px solid var(--line-2);
-    text-decoration: none; color: inherit;
     transition: all 0.12s;
   }}
   .result-item:hover {{
@@ -197,6 +196,10 @@ INDEX_TEMPLATE = """<!DOCTYPE html>
   .result-item.cat-publish {{ border-left-color: var(--accent-2); }}
   .result-item.cat-milestone {{ border-left-color: var(--accent-5); }}
 
+  .result-main-link {{
+    text-decoration: none; color: inherit;
+    display: block; overflow: hidden;
+  }}
   .result-main {{ overflow: hidden; }}
   .result-title {{
     font-family: 'Fraunces', serif; font-size: 15px; font-weight: 500;
@@ -207,6 +210,14 @@ INDEX_TEMPLATE = """<!DOCTYPE html>
     background: rgba(255,216,102,0.25); color: var(--accent);
     border-radius: 2px; padding: 0 2px;
   }}
+  .result-title .history-arrow {{
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--accent); letter-spacing: 0.1em;
+    text-transform: uppercase; margin-left: 6px;
+    opacity: 0.6; transition: opacity 0.12s;
+  }}
+  .result-main-link:hover .history-arrow {{ opacity: 1; }}
+  .result-main-link:hover .result-title {{ color: var(--accent); }}
   .result-detail {{
     font-family: 'JetBrains Mono', monospace; font-size: 10px;
     color: var(--ink-3); margin-top: 3px; letter-spacing: 0.05em;
@@ -214,17 +225,26 @@ INDEX_TEMPLATE = """<!DOCTYPE html>
 
   .result-meta {{
     text-align: right; flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
   }}
-  .result-period {{
+  .result-period, .result-period-link {{
     font-family: 'JetBrains Mono', monospace; font-size: 10px;
     color: var(--ink-2); letter-spacing: 0.05em;
     text-transform: uppercase;
+    text-decoration: none;
   }}
+  .result-period-link:hover {{ color: var(--accent); }}
   .result-week {{
     font-family: 'JetBrains Mono', monospace; font-size: 9px;
     color: var(--ink-3); letter-spacing: 0.15em;
-    margin-top: 2px;
   }}
+  .result-week-link {{
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    color: var(--ink-3); letter-spacing: 0.15em;
+    text-decoration: none;
+    transition: color 0.12s;
+  }}
+  .result-week-link:hover {{ color: var(--accent); }}
 
   .search-empty {{
     text-align: center; padding: 40px 20px;
@@ -388,6 +408,22 @@ INDEX_TEMPLATE = """<!DOCTYPE html>
     </div>
   </div>
 
+  <section style="margin-bottom:56px">
+    <a href="pages/index.html" style="display:block;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:32px;text-decoration:none;color:inherit;transition:all 0.18s;position:relative;overflow:hidden">
+      <div style="position:absolute;left:0;top:0;width:3px;height:100%;background:var(--accent-3)"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap">
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.2em;color:var(--accent-3);text-transform:uppercase;margin-bottom:8px">◆ NEW VIEW</div>
+          <div style="font-family:'Fraunces',serif;font-weight:500;font-size:32px;line-height:1.1;letter-spacing:-0.02em;margin-bottom:6px">Browse by Page or Article →</div>
+          <div style="color:var(--ink-2);font-size:14px;line-height:1.4;max-width:640px">See the full edit history of any single page or article — every modification, publish, and rename across every report.</div>
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);text-align:right;letter-spacing:0.15em;text-transform:uppercase;line-height:1.6">
+          <div style="color:var(--accent-3);font-family:'Fraunces',serif;font-size:36px;font-weight:500;line-height:1">→</div>
+        </div>
+      </div>
+    </a>
+  </section>
+
   <section>
     <div class="section-head">
       <div class="section-num">§ 01</div>
@@ -520,16 +556,30 @@ INDEX_TEMPLATE = """<!DOCTYPE html>
         </div>
         <div class="result-list">`;
       for (const e of displayed) {{
-        html += `<a href="${{escapeHtml(e.report)}}" class="result-item cat-${{e.cat}}">
-          <div class="result-main">
-            <div class="result-title">${{highlight(e.title, query)}}</div>
-            <div class="result-detail">${{highlight(e.detail || '', query)}}</div>
-          </div>
+        // For page/article entries, the title links to the history page;
+        // the period/week shown on the right links separately to the weekly report.
+        const hasHistory = (e.cat === 'page' || e.cat === 'article') && e.slug;
+        const primaryHref = hasHistory ? `pages/${{escapeHtml(e.slug)}}.html` : escapeHtml(e.report);
+        const reportHref = escapeHtml(e.report);
+        const historyArrow = hasHistory
+          ? ' <span class="history-arrow">→ history</span>'
+          : '';
+        const ctxLink = hasHistory
+          ? `<a href="${{reportHref}}" class="result-week-link" title="See this in the ${{escapeHtml(e.week || 'week')}} report">${{escapeHtml(e.week || '')}} →</a>`
+          : `<a href="${{reportHref}}" class="result-week" style="text-decoration:none;color:inherit">${{escapeHtml(e.week || '')}}</a>`;
+
+        html += `<div class="result-item cat-${{e.cat}}">
+          <a href="${{primaryHref}}" class="result-main-link">
+            <div class="result-main">
+              <div class="result-title">${{highlight(e.title, query)}}${{historyArrow}}</div>
+              <div class="result-detail">${{highlight(e.detail || '', query)}}</div>
+            </div>
+          </a>
           <div class="result-meta">
-            <div class="result-period">${{escapeHtml(e.period || '')}}</div>
-            <div class="result-week">${{escapeHtml(e.week || '')}}</div>
+            <a href="${{reportHref}}" class="result-period-link">${{escapeHtml(e.period || '')}}</a>
+            ${{ctxLink}}
           </div>
-        </a>`;
+        </div>`;
       }}
       html += '</div></div>';
     }}

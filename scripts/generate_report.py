@@ -377,7 +377,9 @@ def build_search_entries(events, summary, significant, report_url, period_str):
     # Articles (CMS items, deduped by name)
     article_totals = {}
     for key, count in summary.get('cms_articles', {}).items():
-        name, op = key.split('|')
+        # rsplit from the right because article names can themselves contain '|'
+        # (e.g. "Manual Payroll | A Guide"). The operation suffix never does.
+        name, op = key.rsplit('|', 1)
         if name not in article_totals:
             article_totals[name] = {'modified': 0, 'published': 0, 'created': 0}
         if op == 'MODIFIED':
@@ -488,7 +490,8 @@ def render_report(start_dt, end_dt, events, output_path, template_path):
     # Count unique articles touched
     unique_articles = set()
     for key in summary['cms_articles']:
-        name = key.split('|')[0]
+        # rsplit because article names may contain '|'
+        name = key.rsplit('|', 1)[0]
         unique_articles.add(name)
     article_publishes = sum(c for k, c in summary['cms_articles'].items() if k.endswith('|PUBLISHED'))
 
@@ -509,7 +512,7 @@ def render_report(start_dt, end_dt, events, output_path, template_path):
         if page_name and page_name.lower() not in EXCLUDED_NAMES:
             entity_slugs[page_name] = slugify(page_name)
     for cms_key in summary.get('cms_articles', {}):
-        article_name = cms_key.split('|')[0]
+        article_name = cms_key.rsplit('|', 1)[0]
         if article_name and article_name.lower() not in EXCLUDED_NAMES:
             entity_slugs[article_name] = slugify(article_name)
 
